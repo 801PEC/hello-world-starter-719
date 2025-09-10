@@ -11,9 +11,12 @@ import { Sparkles, Globe } from 'lucide-react';
 
 export default function Auth() {
   const { user, signIn, signUp, loading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
 
   if (loading) {
     return (
@@ -29,14 +32,24 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signInEmail || !signInPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(signInEmail, signInPassword);
     
     if (error) {
       toast({
         title: "Sign In Failed",
-        description: error.message,
+        description: error.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     } else {
@@ -51,21 +64,54 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signUpEmail || !signUpPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signUpPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signUpEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(signUpEmail, signUpPassword);
     
     if (error) {
       toast({
         title: "Sign Up Failed",
-        description: error.message,
+        description: error.message || "Unable to create account. Please try again.",
         variant: "destructive",
       });
     } else {
       toast({
         title: "Account Created!",
-        description: "Please check your email to verify your account.",
+        description: "Please check your email to verify your account before signing in.",
       });
+      // Clear the sign up form
+      setSignUpEmail('');
+      setSignUpPassword('');
+      // Switch to sign in tab
+      setActiveTab('signin');
     }
     
     setIsSubmitting(false);
@@ -88,7 +134,7 @@ export default function Auth() {
         </div>
 
         <Card className="border-0 shadow-xl">
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -104,24 +150,24 @@ export default function Auth() {
               <CardContent>
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="signin-email">Email</Label>
                     <Input
-                      id="email"
+                      id="signin-email"
                       type="email"
                       placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={signInEmail}
+                      onChange={(e) => setSignInEmail(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="signin-password">Password</Label>
                     <Input
-                      id="password"
+                      id="signin-password"
                       type="password"
                       placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={signInPassword}
+                      onChange={(e) => setSignInPassword(e.target.value)}
                       required
                     />
                   </div>
@@ -151,8 +197,8 @@ export default function Auth() {
                       id="signup-email"
                       type="email"
                       placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -161,12 +207,15 @@ export default function Auth() {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a strong password (min 6 characters)"
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
                       required
                       minLength={6}
                     />
+                    <p className="text-sm text-muted-foreground">
+                      Password must be at least 6 characters long
+                    </p>
                   </div>
                   <Button
                     type="submit"
